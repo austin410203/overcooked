@@ -8,6 +8,8 @@ const dict = {
   start: { zh: '開始遊戲', en: 'Play' },
   continue: { zh: '繼續', en: 'Continue' },
   levels: { zh: '關卡', en: 'Levels' },
+  chooseLevel: { zh: '選擇關卡', en: 'Choose a level' },
+  allLevels: { zh: '關卡地圖', en: 'Level map' },
   settings: { zh: '設定', en: 'Settings' },
   howto: { zh: '玩法說明', en: 'How to play' },
   back: { zh: '返回', en: 'Back' },

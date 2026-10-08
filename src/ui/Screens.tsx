@@ -40,7 +40,24 @@ export function MainMenu() {
           <button className="btn primary big" onClick={() => { unlockAudio(); startLevel(hasProgress ? nextIdx : 0); }}>
             {hasProgress ? `${t('continue')} · ${t(LEVELS[nextIdx].id)}` : t('start')}
           </button>
-          <button className="btn" onClick={() => setScreen('levels')}>{t('levels')}</button>
+        </div>
+        <div className="quick-levels">
+          <div className="quick-head">
+            <h3>{t('chooseLevel')}</h3>
+            <button className="btn ghost small" onClick={() => setScreen('levels')}>{t('allLevels')} →</button>
+          </div>
+          <div className="quick-grid">
+            {LEVELS.map((l, i) => {
+              const s = stars[l.id] ?? 0;
+              return (
+                <button key={l.id} className={`quick-level ${l.night ? 'night' : ''}`} onClick={() => { unlockAudio(); startLevel(i); }} title={t(l.id + 'd')}>
+                  <span className="q-num">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="q-name">{t(l.id)}</span>
+                  <span className="q-stars">{[0, 1, 2].map((k) => <b key={k} className={k < s ? 'on' : ''}>★</b>)}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div className="howto">
           <h3>{t('howto')}</h3>
@@ -103,7 +120,7 @@ export function ResultScreen() {
   const { lastResult: r, startLevel, setScreen } = useGame();
   if (!r) return null;
   const lvl = LEVELS[r.levelIndex];
-  const hasNext = r.levelIndex < LEVELS.length - 1 && r.stars > 0;
+  const hasNext = r.levelIndex < LEVELS.length - 1;
   return (
     <div className="screen result-screen">
       <div className="result-card">

@@ -26,7 +26,10 @@ function save(d: SaveData) { try { localStorage.setItem(KEY, JSON.stringify(d));
 export function unlockedUpgrades(stars: Record<string, number>) {
   return UPGRADES.filter((u) => (stars[LEVELS[u.afterLevel].id] ?? 0) > 0).map((u) => u.id);
 }
-export function isLevelUnlocked(index: number, stars: Record<string, number>) {
+export function isLevelUnlocked(_index: number, _stars: Record<string, number>) {
+  return true; // every level can be chosen from the start
+}
+export function _legacyUnlocked(index: number, stars: Record<string, number>) {
   return index === 0 || (stars[LEVELS[index - 1].id] ?? 0) > 0;
 }
 
