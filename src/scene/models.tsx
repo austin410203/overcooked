@@ -3,8 +3,8 @@ import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
 /** Blender-built assets in /public/models (see tools/blender). */
-const BASE = (import.meta.env.BASE_URL || '/').replace(/\/?$/, '/') + 'models/';
-export const modelUrl = (name: string) => `${BASE}${name}.glb`;
+import { modelUrl } from './modelSource';
+export { modelUrl };
 
 export const ALL_MODELS = [
   'char_chef', 'char_prep', 'char_server', 'char_runner', 'char_office', 'char_tourist',
