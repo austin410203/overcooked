@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "models": "python3 tools/blender/build.py && node tools/optimize-models.mjs"
   },
   "dependencies": {
     "@react-three/drei": "9.122.0",
@@ -19,6 +20,7 @@
     "zustand": "4.5.5"
   },
   "devDependencies": {
+    "@gltf-transform/cli": "^4.1.1",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@types/three": "0.169.0",

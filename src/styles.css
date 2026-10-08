@@ -196,3 +196,5 @@ kbd { display: inline-block; min-width: 1.3em; padding: 0 4px; border-radius: 5p
   .hud-left .card.holding { display: none; }
   .hud-right .order-card:nth-of-type(n+5) { display: none; }
 }
+
+.loading { background: var(--card); padding: 12px 20px; border-radius: 14px; font-weight: 800; box-shadow: var(--shadow); white-space: nowrap; }

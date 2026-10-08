@@ -1,7 +1,8 @@
 import { memo, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { mat } from './ItemMesh';
-import { PAL, cylinder, lowSphere, rbox, sphere, unitBox } from './kit';
+import { Model } from './models';
+import { PAL, rbox, unitBox } from './kit';
 import { RING, RING_LENGTH, ringOutline, ringPoint } from './road';
 
 // ---------------------------------------------------------------- helpers
@@ -33,40 +34,20 @@ function RingInstances({ items, color, emissive }: { items: { x: number; z: numb
 
 // ---------------------------------------------------------------- props
 export const Tree = memo(function Tree({ x, z, s = 1, tint = 0 }: { x: number; z: number; s?: number; tint?: number }) {
-  const leaf = ['#7fae5a', '#8bbb63', '#6f9f50'][tint % 3];
-  return (
-    <group position={[x, 0, z]} scale={s}>
-      <mesh geometry={rbox(0.7, 0.3, 0.7, 0.08)} material={mat(PAL.green)} position={[0, 0.15, 0]} castShadow receiveShadow />
-      <mesh geometry={rbox(0.6, 0.04, 0.6, 0.02)} material={mat('#7a5a3c')} position={[0, 0.31, 0]} />
-      <mesh geometry={cylinder(0.06, 0.09, 0.9, 8)} material={mat('#7a5a3c')} position={[0, 0.75, 0]} castShadow />
-      <mesh geometry={lowSphere} material={mat(leaf)} position={[0, 1.45, 0]} scale={[0.62, 0.66, 0.62]} castShadow />
-      <mesh geometry={lowSphere} material={mat(leaf)} position={[0.22, 1.25, 0.12]} scale={0.38} castShadow />
-      <mesh geometry={lowSphere} material={mat(leaf)} position={[-0.2, 1.3, -0.1]} scale={0.36} castShadow />
-    </group>
-  );
+  return <Model name={`prop_tree${tint % 3}`} position={[x, 0, z]} scale={s} rotation={[0, tint * 1.3, 0]} />;
 });
 
 export const Lamp = memo(function Lamp({ x, z, night, ry = 0 }: { x: number; z: number; night: boolean; ry?: number }) {
   return (
     <group position={[x, 0, z]} rotation={[0, ry, 0]}>
-      <mesh geometry={cylinder(0.12, 0.14, 0.18, 10)} material={mat(PAL.green)} position={[0, 0.09, 0]} />
-      <mesh geometry={cylinder(0.04, 0.05, 2.3, 8)} material={mat(PAL.green)} position={[0, 1.25, 0]} castShadow />
-      <mesh geometry={rbox(0.5, 0.06, 0.08, 0.02)} material={mat(PAL.green)} position={[0.2, 2.38, 0]} />
-      <mesh geometry={rbox(0.24, 0.16, 0.24, 0.05)} material={mat(PAL.green)} position={[0.42, 2.32, 0]} />
-      <mesh geometry={sphere} material={mat('#fff3c4', '#ffd27a', night ? 4 : 0.15)} position={[0.42, 2.2, 0]} scale={[0.1, 0.06, 0.1]} />
+      <Model name="prop_lamp" />
       {night && <pointLight position={[0.42, 2.0, 0]} color="#ffcf88" intensity={8} distance={6.5} decay={1.6} />}
     </group>
   );
 });
 
 function Bench({ x, z, ry }: { x: number; z: number; ry: number }) {
-  return (
-    <group position={[x, 0, z]} rotation={[0, ry, 0]}>
-      <mesh geometry={rbox(1.1, 0.07, 0.36, 0.03)} material={mat('#b97a4a')} position={[0, 0.38, 0]} castShadow />
-      <mesh geometry={rbox(1.1, 0.3, 0.06, 0.03)} material={mat('#b97a4a')} position={[0, 0.58, -0.16]} castShadow />
-      {[-0.45, 0.45].map((bx) => <mesh key={bx} geometry={rbox(0.06, 0.36, 0.34, 0.02)} material={mat(PAL.green)} position={[bx, 0.18, 0]} />)}
-    </group>
-  );
+  return <Model name="prop_bench" position={[x, 0, z]} rotation={[0, ry, 0]} />;
 }
 
 // ---------------------------------------------------------------- townhouse
@@ -224,6 +205,16 @@ export function City({ night, rain }: { night: boolean; rain: boolean }) {
       {homeList.map((h, i) => <Townhouse key={i} h={h} night={night} />)}
       {outerTrees.map(([x, z, i]) => <Tree key={i} x={x} z={z} s={0.95} tint={i} />)}
       {lamps.map(([x, z, ry], i) => <Lamp key={i} x={x} z={z} night={night} ry={ry} />)}
+      {[[-6, RING.cz - RING.hh], [6, RING.cz - RING.hh], [0, RING.cz + RING.hh]].map(([cx, cz], i) => (
+        <group key={i}>
+          <Model name="prop_traffic_light" position={[cx - 1.8, 0, cz + (cz > 0 ? 1 : -1) * (W / 2 + 0.6)]} rotation={[0, cz > 0 ? Math.PI : 0, 0]} />
+          <Model name="prop_hydrant" position={[cx + 1.9, 0, cz + (cz > 0 ? 1 : -1) * (W / 2 + 0.7)]} />
+        </group>
+      ))}
+      <Model name="prop_barrier" position={[19, 0, -12.6]} />
+      <Model name="prop_cone" position={[17.8, 0, -12.4]} />
+      <Model name="prop_cone" position={[20.3, 0, -12.5]} />
+      <Model name="prop_kiosk" position={[-19.5, 0, -12.2]} rotation={[0, 0.4, 0]} />
       <Bench x={-7.5} z={-12.3} ry={0} />
       <Bench x={7.5} z={-12.3} ry={0} />
       <Bench x={-17.6} z={8} ry={Math.PI / 2} />

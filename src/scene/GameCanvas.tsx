@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
@@ -37,7 +37,7 @@ function Lights() {
   }, [night, scene]);
   return (
     <>
-      <hemisphereLight args={[night ? '#5a6aa8' : '#fff6e0', night ? '#1a2030' : '#c9b48f', night ? 0.7 : 1.1]} />
+      <hemisphereLight args={[night ? '#5a6aa8' : '#fff6e0', night ? '#2a3048' : '#c9b48f', night ? 1.05 : 1.1]} />
       <directionalLight
         position={night ? [-14, 26, 10] : [-14, 28, 16]} intensity={night ? 0.35 : 1.9} color={night ? '#9fb4ff' : '#fff1d6'}
         castShadow shadow-camera-left={-30} shadow-camera-right={30}
@@ -91,6 +91,7 @@ export function GameCanvas({ engine }: { engine: GameEngine }) {
     >
       <CameraRig engine={engine} />
       <Lights />
+      <Suspense fallback={<Html center><div className="loading">Loading models…</div></Html>}>
       <World engine={engine} />
       <group position={[0, 0.14, 0]}>
         <Stations engine={engine} />
@@ -100,6 +101,7 @@ export function GameCanvas({ engine }: { engine: GameEngine }) {
       <Vehicles engine={engine} />
       <FloatingFx engine={engine} />
       <Loop engine={engine} />
+      </Suspense>
     </Canvas>
   );
 }

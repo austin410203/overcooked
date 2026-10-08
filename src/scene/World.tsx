@@ -6,6 +6,7 @@ import { BOARD_OFFSET, LANE_Z, SOUTH_WALL_Z, WINDOW_X } from '../game/data/layou
 import { mat } from './ItemMesh';
 import { useGame } from '../store/useGame';
 import { City, Tree } from './City';
+import { Model } from './models';
 import { PAL, cylinder, rbox, sphere, unitBox, unitPlane } from './kit';
 import { ENTRY_X, RING } from './road';
 
@@ -15,7 +16,7 @@ function signTexture(lines: string[], bg: string, fg: string) {
   const g = c.getContext('2d')!;
   g.fillStyle = bg; g.fillRect(0, 0, 512, 256);
   g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.font = '900 92px "Baloo 2", "Noto Sans TC", sans-serif';
+  g.font = '900 84px "Baloo 2", "Noto Sans TC", sans-serif';
   g.fillText(lines[0], 256, lines[1] ? 100 : 128);
   if (lines[1]) { g.font = '800 54px "Noto Sans TC", "Baloo 2", sans-serif'; g.fillText(lines[1], 256, 196); }
   const t = new THREE.CanvasTexture(c);
@@ -76,14 +77,14 @@ function StringLights({ a, b, night, n = 12 }: { a: [number, number, number]; b:
   );
 }
 
-function Planter({ x, z, s = 1 }: { x: number; z: number; s?: number }) {
-  return (
-    <group position={[x, 0, z]} scale={s}>
-      <mesh geometry={rbox(0.55, 0.45, 0.55, 0.08)} material={mat(PAL.terracottaDark)} position={[0, 0.25, 0]} castShadow />
-      <mesh geometry={sphere} material={mat('#6f9f50')} position={[0, 0.65, 0]} scale={[0.32, 0.3, 0.32]} castShadow />
-      <mesh geometry={sphere} material={mat('#e86a5a')} position={[0.1, 0.85, 0.1]} scale={0.06} />
-    </group>
-  );
+function Planter({ x, z, s = 1, ry = 0 }: { x: number; z: number; s?: number; ry?: number }) {
+  return <Model name="prop_planter" position={[x, 0, z]} scale={s} rotation={[0, ry, 0]} />;
+}
+
+function Pedestrian({ name, x, z, ry, phase = 0 }: { name: string; x: number; z: number; ry: number; phase?: number }) {
+  const ref = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => { if (ref.current) ref.current.position.y = Math.abs(Math.sin(clock.elapsedTime * 2 + phase)) * 0.03; });
+  return <group position={[x, 0, z]} rotation={[0, ry, 0]}><group ref={ref}><Model name={name} /></group></group>;
 }
 
 export function World({ engine }: { engine: GameEngine }) {
@@ -93,8 +94,7 @@ export function World({ engine }: { engine: GameEngine }) {
   const b = engine.bounds;
   const laneMinZ = SOUTH_WALL_Z + 0.75;
   const laneMaxZ = LANE_Z(lanes - 1) + 0.8;
-  const signTex = useMemo(() => signTexture(lang === 'zh' ? ['DRIVE THRU', '得來速'] : ['DRIVE', 'THRU'], '#1f4d3a', '#ffd166'), [lang]);
-  const boardTex = useMemo(() => signTexture(['MENU', lang === 'zh' ? '點餐' : 'ORDER HERE'], '#2f3e46', '#fff3d6'), [lang]);
+  const signTex = useMemo(() => signTexture(lang === 'zh' ? ['得來速餐廳', 'DRIVE-THRU DASH'] : ['DRIVE-THRU', 'DASH'], '#1f4d3a', '#ffd166'), [lang]);
   const W = b.maxX - b.minX + 0.6, D = b.maxZ - b.minZ + 1;
   const cx = (b.maxX + b.minX) / 2, cz = (b.maxZ + b.minZ) / 2 + 0.25;
   const wallH = 1.0;
@@ -186,29 +186,31 @@ export function World({ engine }: { engine: GameEngine }) {
 
       {/* menu boards beside each lane's ordering spot */}
       {WINDOW_X.slice(0, lanes).map((x, l) => (
-        <group key={l} position={[x - BOARD_OFFSET, 0, laneMinZ - 0.35 - l * 0.0]}>
-          <mesh geometry={rbox(0.14, 1.0, 0.14, 0.03)} material={mat(PAL.green)} position={[0, 0.5, 0]} />
-          <mesh geometry={rbox(1.15, 0.8, 0.12, 0.04)} material={mat(PAL.green)} position={[0, 1.35, 0]} castShadow />
-          <mesh geometry={unitPlane} position={[0, 1.35, 0.065]} scale={[1.0, 0.65, 1]}>
-            <meshStandardMaterial map={boardTex} emissive="#ffffff" emissiveMap={boardTex} emissiveIntensity={night ? 0.7 : 0.05} />
-          </mesh>
-          <mesh geometry={rbox(0.32, 0.18, 0.1, 0.03)} material={mat(PAL.coral)} position={[0, 1.83, 0]} />
-          <mesh geometry={unitBox} position={[0, 1.83, 0.05]} scale={[0.2, 0.05, 0.02]} material={mat('#fff', '#fff', 0.2)} />
-        </group>
+        <Model key={l} name="prop_menu_board" position={[x - BOARD_OFFSET, 0, laneMinZ - 0.4]} scale={0.9} />
       ))}
+      {/* drive-thru entrance arch spanning all lanes */}
+      <Model name="prop_drive_thru_arch" position={[ENTRY_X + 0.6, 0, (laneMinZ + laneMaxZ) / 2]} rotation={[0, -Math.PI / 2, 0]}
+        scale={[(laneMaxZ - laneMinZ + 0.9) / 3.3, 1, 1]} />
 
-      {/* pylon sign at the drive-thru entrance */}
-      <group position={[ENTRY_X - 1.0, 0, SOUTH_WALL_Z - 0.6]}>
-        <mesh geometry={rbox(0.9, 0.3, 0.9, 0.06)} material={mat(PAL.curb)} position={[0, 0.15, 0]} />
-        <mesh geometry={cylinder(0.12, 0.14, 4.4, 10)} material={mat(PAL.green)} position={[0, 2.4, 0]} castShadow />
-        <group position={[0, 4.6, 0]} rotation={[0, 0.4, 0]}>
-          <mesh geometry={rbox(2.8, 1.5, 0.3, 0.12)} material={mat(PAL.mustard)} castShadow />
-          <mesh geometry={unitPlane} position={[0, 0, 0.16]} scale={[2.5, 1.25, 1]}>
-            <meshStandardMaterial map={signTex} emissive="#ffffff" emissiveMap={signTex} emissiveIntensity={night ? 1.1 : 0.05} />
-          </mesh>
-        </group>
-        {night && <pointLight position={[0, 4.4, 1.2]} color="#ffd166" intensity={10} distance={8} />}
+      {/* bilingual shop sign on the back wall */}
+      <group position={[cx + W * 0.28, 2.35, b.minZ - 0.45]}>
+        <mesh geometry={rbox(2.6, 1.0, 0.14, 0.06)} material={mat(PAL.mustard)} castShadow />
+        <mesh geometry={unitPlane} position={[0, 0, 0.075]} scale={[2.4, 0.86, 1]}>
+          <meshStandardMaterial map={signTex} emissive="#ffffff" emissiveMap={signTex} emissiveIntensity={night ? 0.9 : 0.05} />
+        </mesh>
       </group>
+      {/* pylon sign */}
+      <Model name="prop_pylon" position={[ENTRY_X - 1.0, 0, SOUTH_WALL_Z - 0.8]} rotation={[0, 0.5, 0]} />
+      {night && <pointLight position={[ENTRY_X - 0.6, 4.4, SOUTH_WALL_Z]} color="#ffd166" intensity={10} distance={8} />}
+
+      {/* outdoor dining behind the kitchen */}
+      <Model name="prop_umbrella_table" position={[cx - 3.5, 0, b.minZ - 1.9]} />
+      <Model name="prop_umbrella_table" position={[cx + 3.5, 0, b.minZ - 1.9]} />
+      <Pedestrian name="char_office" x={cx - 2.4} z={b.minZ - 1.7} ry={-1.2} />
+      <Pedestrian name="char_tourist" x={cx + 4.6} z={b.minZ - 1.6} ry={1.4} phase={1} />
+      <Pedestrian name="char_runner" x={b.maxX + 1.6} z={2.6} ry={0.6} phase={2} />
+      <Pedestrian name="char_prep" x={b.minX - 1.4} z={1.6} ry={-0.5} phase={0.5} />
+      <Pedestrian name="char_server" x={b.maxX + 1.5} z={-1.0} ry={-0.9} phase={1.5} />
 
       {/* string lights over the kitchen */}
       {[b.minX - 0.45, b.maxX + 0.45].map((x) => (
