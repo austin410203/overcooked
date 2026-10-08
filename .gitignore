@@ -3,3 +3,4 @@ dist
 .vercel
 .assets-raw
 src/scene/modelData.gen.ts
+__pycache__/
