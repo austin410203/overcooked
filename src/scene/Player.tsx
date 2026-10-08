@@ -11,6 +11,7 @@ const limbG = new THREE.CapsuleGeometry(0.07, 0.18, 3, 6);
 const hatG = new THREE.CylinderGeometry(0.3, 0.33, 0.14, 14);
 const brimG = new THREE.CylinderGeometry(0.4, 0.4, 0.03, 14);
 const eyeG = new THREE.SphereGeometry(0.04, 6, 5);
+const apronG = new THREE.BoxGeometry(0.34, 0.38, 0.12);
 const shadowG = new THREE.CircleGeometry(0.35, 16);
 
 export function Player({ engine }: { engine: GameEngine }) {
@@ -58,10 +59,14 @@ export function Player({ engine }: { engine: GameEngine }) {
         <mesh geometry={headG} material={mat('#f6d1b1')} position={[0, 1.0, 0]} castShadow />
         <mesh geometry={eyeG} material={mat('#222')} position={[-0.11, 1.03, 0.3]} />
         <mesh geometry={eyeG} material={mat('#222')} position={[0.11, 1.03, 0.3]} />
-        <mesh geometry={brimG} material={mat('#1f4d3a')} position={[0, 1.24, 0.04]} />
-        <mesh geometry={hatG} material={mat('#1f4d3a')} position={[0, 1.31, 0]} castShadow />
+        <mesh geometry={hatG} material={mat('#fbf6ea')} position={[0, 1.3, 0]} scale={[0.95, 1.2, 0.95]} castShadow />
+        <mesh geometry={headG} material={mat('#ffffff')} position={[0, 1.5, 0]} scale={[0.95, 0.55, 0.95]} castShadow />
+        <mesh geometry={brimG} material={mat('#1f4d3a')} position={[0, 1.22, 0]} scale={[0.85, 2, 0.85]} />
+        <mesh geometry={apronG} material={mat('#fbf6ea')} position={[0, 0.45, 0.17]} castShadow />
+        <mesh geometry={headG} material={mat('#f2a7a0')} position={[-0.2, 0.95, 0.24]} scale={0.12} />
+        <mesh geometry={headG} material={mat('#f2a7a0')} position={[0.2, 0.95, 0.24]} scale={0.12} />
         {carrying && (
-          <group position={[0, 1.5, 0]} scale={1.3}><ItemMesh item={carrying} /></group>
+          <group position={[0, 1.85, 0]} scale={1.3}><ItemMesh item={carrying} /></group>
         )}
       </group>
     </group>

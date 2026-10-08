@@ -69,7 +69,7 @@ export const useGame = create<GameState>((set, get) => ({
   speed: 1,
   tick: 0,
   debug: false,
-  zoom: 1,
+  zoom: 1.15,
   lastResult: null,
   setScreen: (screen) => set({ screen }),
   setLang: (lang) => { set({ lang }); save(persisted(get())); },
@@ -101,6 +101,6 @@ export const useGame = create<GameState>((set, get) => ({
     save(persisted(get()));
   },
   toggleDebug: () => set({ debug: !get().debug }),
-  setZoom: (z) => set({ zoom: Math.min(1.5, Math.max(0.75, z)) }),
+  setZoom: (z) => set({ zoom: Math.min(2.2, Math.max(0.8, z)) }),
   resetProgress: () => { set({ stars: {}, best: {} }); save(persisted(get())); },
 }));

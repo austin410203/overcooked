@@ -5,15 +5,9 @@ import type { GameEngine } from '../game/systems/engine';
 import { BOARD_OFFSET, LANE_Z, SOUTH_WALL_Z, WINDOW_X } from '../game/data/layouts';
 import { mat } from './ItemMesh';
 import { useGame } from '../store/useGame';
-
-const box = new THREE.BoxGeometry(1, 1, 1);
-const plane = new THREE.PlaneGeometry(1, 1);
-const cone = new THREE.ConeGeometry(0.6, 1.4, 6);
-const trunk = new THREE.CylinderGeometry(0.1, 0.14, 0.7, 6);
-const ball = new THREE.IcosahedronGeometry(0.55, 0);
-const pole = new THREE.CylinderGeometry(0.05, 0.06, 2.4, 6);
-const bulb = new THREE.SphereGeometry(0.16, 8, 6);
-const tcone = new THREE.ConeGeometry(0.16, 0.42, 8);
+import { City, Tree } from './City';
+import { PAL, cylinder, rbox, sphere, unitBox, unitPlane } from './kit';
+import { ENTRY_X, RING } from './road';
 
 function signTexture(lines: string[], bg: string, fg: string) {
   const c = document.createElement('canvas');
@@ -29,45 +23,12 @@ function signTexture(lines: string[], bg: string, fg: string) {
   return t;
 }
 
-function Tree({ p, s = 1 }: { p: [number, number]; s?: number }) {
-  return (
-    <group position={[p[0], 0, p[1]]} scale={s}>
-      <mesh geometry={trunk} material={mat('#8a5a3b')} position={[0, 0.35, 0]} castShadow />
-      <mesh geometry={ball} material={mat('#6aa84f')} position={[0, 1.05, 0]} castShadow />
-      <mesh geometry={ball} material={mat('#7cbf5d')} position={[0.15, 1.45, 0.05]} scale={0.7} castShadow />
-    </group>
-  );
-}
-
-function Lamp({ p, night }: { p: [number, number]; night: boolean }) {
-  return (
-    <group position={[p[0], 0, p[1]]}>
-      <mesh geometry={pole} material={mat('#3b4a43')} position={[0, 1.2, 0]} castShadow />
-      <mesh geometry={bulb} material={mat('#fff1c1', '#ffd27a', night ? 4 : 0.2)} position={[0, 2.45, 0]} />
-      {night && <pointLight position={[0, 2.3, 0]} color="#ffcf88" intensity={9} distance={7} decay={1.6} />}
-    </group>
-  );
-}
-
-function CityBlock({ p, w, d, h, c, night }: { p: [number, number]; w: number; d: number; h: number; c: string; night: boolean }) {
-  return (
-    <group position={[p[0], 0, p[1]]}>
-      <mesh geometry={box} material={mat(c)} position={[0, h / 2, 0]} scale={[w, h, d]} castShadow receiveShadow />
-      <mesh geometry={box} material={mat('#f8f1e2')} position={[0, h + 0.08, 0]} scale={[w + 0.1, 0.16, d + 0.1]} />
-      {Array.from({ length: Math.max(1, Math.floor(h / 1.1)) }).map((_, i) => (
-        <mesh key={i} geometry={box} material={mat(night ? '#ffe7a3' : '#a9cfe0', night ? '#ffcc66' : undefined, night ? (i % 2 ? 1.2 : 0.4) : 0)}
-          position={[0, 0.8 + i * 1.1, d / 2 + 0.01]} scale={[w * 0.75, 0.45, 0.02]} />
-      ))}
-    </group>
-  );
-}
-
 function Rain({ engine }: { engine: GameEngine }) {
-  const N = 900;
+  const N = 1400;
   const { geo, pos } = useMemo(() => {
     const pos = new Float32Array(N * 6);
     for (let i = 0; i < N; i++) {
-      const x = (Math.random() - 0.5) * 40, y = Math.random() * 14, z = (Math.random() - 0.5) * 30;
+      const x = (Math.random() - 0.5) * 50, y = Math.random() * 14, z = (Math.random() - 0.5) * 40;
       pos.set([x, y, z, x + 0.05, y - 0.45, z + 0.05], i * 6);
     }
     const geo = new THREE.BufferGeometry();
@@ -96,22 +57,51 @@ function Rain({ engine }: { engine: GameEngine }) {
   );
 }
 
+
+/** Catenary of light bulbs between two posts */
+function StringLights({ a, b, night, n = 12 }: { a: [number, number, number]; b: [number, number, number]; night: boolean; n?: number }) {
+  const pts = useMemo(() => Array.from({ length: n + 1 }).map((_, i) => {
+    const t = i / n;
+    return new THREE.Vector3(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t - Math.sin(Math.PI * t) * 0.45, a[2] + (b[2] - a[2]) * t);
+  }), [a, b, n]);
+  const wire = useMemo(() => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.012, 4), [pts]);
+  return (
+    <group>
+      <mesh geometry={wire} material={mat(PAL.ink)} />
+      {pts.slice(1, -1).map((p, i) => (
+        <mesh key={i} geometry={sphere} position={[p.x, p.y - 0.07, p.z]} scale={0.065}
+          material={mat('#fff4cf', '#ffcf6b', night ? 3 : 0.35)} />
+      ))}
+    </group>
+  );
+}
+
+function Planter({ x, z, s = 1 }: { x: number; z: number; s?: number }) {
+  return (
+    <group position={[x, 0, z]} scale={s}>
+      <mesh geometry={rbox(0.55, 0.45, 0.55, 0.08)} material={mat(PAL.terracottaDark)} position={[0, 0.25, 0]} castShadow />
+      <mesh geometry={sphere} material={mat('#6f9f50')} position={[0, 0.65, 0]} scale={[0.32, 0.3, 0.32]} castShadow />
+      <mesh geometry={sphere} material={mat('#e86a5a')} position={[0.1, 0.85, 0.1]} scale={0.06} />
+    </group>
+  );
+}
+
 export function World({ engine }: { engine: GameEngine }) {
   const night = useGame((s) => s.theme === 'night');
   const lang = useGame((s) => s.lang);
-  const lvl = engine.level;
+  const lanes = engine.level.lanes;
   const b = engine.bounds;
-  const lanes = lvl.lanes;
-  const roadMinZ = SOUTH_WALL_Z + 0.9;
-  const roadMaxZ = LANE_Z(lanes - 1) + 0.8;
-  const signTex = useMemo(() => signTexture(lang === 'zh' ? ['DRIVE THRU', '得來速'] : ['DRIVE', 'THRU'], night ? '#1f4d3a' : '#1f4d3a', '#ffd166'), [lang, night]);
+  const laneMinZ = SOUTH_WALL_Z + 0.75;
+  const laneMaxZ = LANE_Z(lanes - 1) + 0.8;
+  const signTex = useMemo(() => signTexture(lang === 'zh' ? ['DRIVE THRU', '得來速'] : ['DRIVE', 'THRU'], '#1f4d3a', '#ffd166'), [lang]);
   const boardTex = useMemo(() => signTexture(['MENU', lang === 'zh' ? '點餐' : 'ORDER HERE'], '#2f3e46', '#fff3d6'), [lang]);
   const W = b.maxX - b.minX + 0.6, D = b.maxZ - b.minZ + 1;
   const cx = (b.maxX + b.minX) / 2, cz = (b.maxZ + b.minZ) / 2 + 0.25;
-  const wallC = mat(night ? '#c9b48f' : '#f2e3c6');
-  const wallH = 1.05;
+  const wallH = 1.0;
+  const wall = mat(night ? '#c46d4a' : PAL.terracotta);
+  const cap = mat(PAL.white);
+  const lanesX0 = RING.cx - RING.hw + RING.width / 2 - 0.4;
 
-  // south wall segments with gaps at pickup windows
   const southSegs = useMemo(() => {
     const xs = WINDOW_X.slice(0, lanes).sort((a, c) => a - c);
     const segs: [number, number][] = [];
@@ -121,105 +111,128 @@ export function World({ engine }: { engine: GameEngine }) {
     return segs;
   }, [lanes, b.minX, b.maxX]);
 
-  const night2 = night;
+  const tiles = useMemo(() => {
+    const t: [number, number, boolean][] = [];
+    for (let x = b.minX - 0.3; x < b.maxX + 0.3 - 0.01; x += 1) for (let z = b.minZ - 0.25; z < b.maxZ + 0.75 - 0.01; z += 1)
+      t.push([x + 0.5, z + 0.5, (Math.round(x) + Math.round(z)) % 2 === 0]);
+    return t;
+  }, [b]);
+
   return (
     <group>
-      {/* ground */}
-      <mesh geometry={plane} rotation={[-Math.PI / 2, 0, 0]} scale={[60, 44, 1]} position={[0, -0.01, 0]} receiveShadow>
-        <meshStandardMaterial color={night2 ? '#3a4a3a' : '#cfe0a8'} roughness={1} />
+      <City night={night} rain={engine.rainLevel > 0} />
+
+      {/* drive-thru lanes connect to the ring road on both ends */}
+      <mesh geometry={unitBox} position={[0, 0.02, (laneMinZ + laneMaxZ) / 2]} scale={[-lanesX0 * 2, 0.03, laneMaxZ - laneMinZ]} receiveShadow>
+        <meshStandardMaterial color={night ? PAL.asphaltNight : PAL.asphalt} roughness={engine.rainLevel ? 0.3 : 0.95} metalness={engine.rainLevel ? 0.2 : 0} />
       </mesh>
-      {/* drive-thru road */}
-      <mesh geometry={plane} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, (roadMinZ + roadMaxZ) / 2]} scale={[44, roadMaxZ - roadMinZ, 1]} receiveShadow>
-        <meshStandardMaterial color={night2 ? '#2b2f36' : '#5d6670'} roughness={engine.rainLevel ? 0.35 : 0.95} metalness={engine.rainLevel ? 0.2 : 0} />
-      </mesh>
-      {Array.from({ length: lanes - 1 }).map((_, l) => (
-        Array.from({ length: 18 }).map((__, i) => (
-          <mesh key={`${l}-${i}`} geometry={plane} rotation={[-Math.PI / 2, 0, 0]} position={[-20 + i * 2.4, 0.012, (LANE_Z(l) + LANE_Z(l + 1)) / 2]} scale={[1.2, 0.08, 1]}>
-            <meshBasicMaterial color="#f6ecd9" />
-          </mesh>
-        ))
+      {Array.from({ length: lanes - 1 }).map((_, l) => Array.from({ length: 11 }).map((__, i) => (
+        <mesh key={`${l}-${i}`} geometry={unitPlane} rotation={[-Math.PI / 2, 0, 0]} position={[ENTRY_X + i * 2.1, 0.042, (LANE_Z(l) + LANE_Z(l + 1)) / 2]} scale={[1.0, 0.07, 1]}>
+          <meshBasicMaterial color={PAL.dash} />
+        </mesh>
+      )))}
+      {/* lane arrows */}
+      {Array.from({ length: lanes }).map((_, l) => (
+        <mesh key={l} geometry={unitPlane} rotation={[-Math.PI / 2, 0, -Math.PI / 4]} position={[ENTRY_X + 1.2, 0.043, LANE_Z(l)]} scale={[0.35, 0.35, 1]}>
+          <meshBasicMaterial color={PAL.yellowLine} />
+        </mesh>
       ))}
-      {/* curb / sidewalk */}
-      <mesh geometry={box} material={mat('#e9dcc3')} position={[0, 0.06, roadMinZ - 0.4]} scale={[44, 0.12, 0.8]} receiveShadow />
-      <mesh geometry={box} material={mat('#e9dcc3')} position={[0, 0.06, roadMaxZ + 0.5]} scale={[44, 0.12, 1]} receiveShadow />
-      {/* back loop road */}
-      <mesh geometry={plane} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.004, b.minZ - 3]} scale={[44, 2.6, 1]} receiveShadow>
-        <meshStandardMaterial color={night2 ? '#2b2f36' : '#6b737c'} roughness={0.95} />
-      </mesh>
-      {/* stripes on back road */}
-      {Array.from({ length: 18 }).map((_, i) => (
-        <mesh key={i} geometry={plane} rotation={[-Math.PI / 2, 0, 0]} position={[-20 + i * 2.4, 0.01, b.minZ - 3]} scale={[1.2, 0.08, 1]}>
-          <meshBasicMaterial color="#f6ecd9" />
+      {/* curb between lanes and building */}
+      <mesh geometry={rbox(-lanesX0 * 2 - 3, 0.12, 0.3, 0.04)} material={mat(PAL.curb)} position={[0, 0.06, laneMinZ - 0.1]} receiveShadow />
+      <mesh geometry={rbox(-lanesX0 * 2 - 3, 0.12, 0.3, 0.04)} material={mat(PAL.curb)} position={[0, 0.06, laneMaxZ + 0.12]} receiveShadow />
+
+      {/* restaurant floor: terracotta checker */}
+      <mesh geometry={rbox(W + 0.6, 0.16, D + 0.5, 0.06)} material={mat(PAL.green)} position={[cx, 0.06, cz]} receiveShadow />
+      {tiles.map(([x, z, dark], i) => (
+        <mesh key={i} geometry={unitPlane} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.145, z]} scale={[0.98, 0.98, 1]} receiveShadow>
+          <meshStandardMaterial color={dark ? (night ? '#b8694a' : PAL.terracottaDark) : (night ? '#cf8462' : '#e49a72')} roughness={0.85} />
         </mesh>
       ))}
 
-      {/* kitchen floor */}
-      <mesh geometry={plane} rotation={[-Math.PI / 2, 0, 0]} position={[cx, 0.02, cz]} scale={[W, D, 1]} receiveShadow>
-        <meshStandardMaterial color={night2 ? '#d8c7a3' : '#f6ecd9'} roughness={0.9} />
-      </mesh>
-      {Array.from({ length: Math.ceil(W / 1.2) * Math.ceil(D / 1.2) }).map((_, i) => {
-        const cols = Math.ceil(W / 1.2);
-        const xi = i % cols, zi = Math.floor(i / cols);
-        if ((xi + zi) % 2) return null;
-        const x = b.minX - 0.3 + xi * 1.2 + 0.6, z = b.minZ - 0.25 + zi * 1.2 + 0.6;
-        if (x > b.maxX + 0.3 || z > b.maxZ + 0.75) return null;
-        return <mesh key={i} geometry={plane} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.025, z]} scale={[1.2, 1.2, 1]}><meshStandardMaterial color={night2 ? '#cbb994' : '#eadcc0'} /></mesh>;
-      })}
-      {/* walls */}
-      <mesh geometry={box} material={wallC} position={[cx, wallH, b.minZ - 0.45]} scale={[W + 0.3, wallH * 2, 0.3]} castShadow receiveShadow />
-      <mesh geometry={box} material={wallC} position={[b.minX - 0.45, wallH / 2, cz]} scale={[0.3, wallH, D]} castShadow receiveShadow />
-      <mesh geometry={box} material={wallC} position={[b.maxX + 0.45, wallH / 2, cz]} scale={[0.3, wallH, D]} castShadow receiveShadow />
-      {southSegs.map(([a, c], i) => (
-        <mesh key={i} geometry={box} material={wallC} position={[(a + c) / 2, wallH / 2, SOUTH_WALL_Z]} scale={[c - a, wallH, 0.3]} castShadow receiveShadow />
-      ))}
-      {/* awnings above windows */}
-      {WINDOW_X.slice(0, lanes).map((x, i) => (
-        <group key={i} position={[x, 0, SOUTH_WALL_Z + 0.4]}>
-          <mesh geometry={box} material={mat(i % 2 ? '#f4a259' : '#ee6c4d')} position={[0, 2.0, 0]} scale={[1.6, 0.12, 1.0]} rotation={[0.25, 0, 0]} castShadow />
-          <mesh geometry={pole} material={mat('#3b4a43')} position={[-0.75, 1.0, 0.4]} scale={[0.6, 0.85, 0.6]} />
-          <mesh geometry={pole} material={mat('#3b4a43')} position={[0.75, 1.0, 0.4]} scale={[0.6, 0.85, 0.6]} />
+      {/* walls with white caps */}
+      <mesh geometry={rbox(W + 0.3, wallH * 1.8, 0.3, 0.06)} material={wall} position={[cx, wallH * 0.9, b.minZ - 0.45]} castShadow receiveShadow />
+      <mesh geometry={rbox(W + 0.42, 0.1, 0.42, 0.04)} material={cap} position={[cx, wallH * 1.8 + 0.03, b.minZ - 0.45]} />
+      {[b.minX - 0.45, b.maxX + 0.45].map((x) => (
+        <group key={x}>
+          <mesh geometry={rbox(0.3, wallH, D, 0.06)} material={wall} position={[x, wallH / 2, cz]} castShadow receiveShadow />
+          <mesh geometry={rbox(0.42, 0.1, D + 0.1, 0.04)} material={cap} position={[x, wallH + 0.03, cz]} />
         </group>
       ))}
-      {/* menu boards */}
+      {southSegs.map(([a, c], i) => (
+        <group key={i}>
+          <mesh geometry={rbox(c - a, wallH, 0.3, 0.06)} material={wall} position={[(a + c) / 2, wallH / 2, SOUTH_WALL_Z]} castShadow receiveShadow />
+          <mesh geometry={rbox(c - a + 0.08, 0.1, 0.42, 0.04)} material={cap} position={[(a + c) / 2, wallH + 0.03, SOUTH_WALL_Z]} />
+        </group>
+      ))}
+      {/* back-wall shelf with jars (like a real kitchen line) */}
+      <mesh geometry={rbox(W * 0.5, 0.06, 0.25, 0.02)} material={mat('#b97a4a')} position={[cx - W * 0.15, 1.45, b.minZ - 0.22]} />
+      {Array.from({ length: 9 }).map((_, i) => (
+        <mesh key={i} geometry={cylinder(0.07, 0.07, 0.2, 10)} material={mat(['#e3b04b', '#d9483b', '#7bb662', PAL.white][i % 4])} position={[cx - W * 0.38 + i * (W * 0.46 / 8), 1.58, b.minZ - 0.22]} />
+      ))}
+
+      {/* pickup windows: awning + frame */}
+      {WINDOW_X.slice(0, lanes).map((x, i) => (
+        <group key={i} position={[x, 0, SOUTH_WALL_Z]}>
+          {[-0.6, 0.6].map((dx) => <mesh key={dx} geometry={rbox(0.14, 2.1, 0.36, 0.04)} material={mat(PAL.green)} position={[dx, 1.05, 0]} castShadow />)}
+          <group position={[0, 2.15, 0.45]} rotation={[0.35, 0, 0]}>
+            {Array.from({ length: 6 }).map((_, k) => (
+              <mesh key={k} geometry={unitBox} material={mat(k % 2 ? PAL.white : (i % 2 ? PAL.green : PAL.tomato))} position={[-0.7 + 0.28 * k + 0.14, 0, 0]} scale={[0.28, 0.05, 1.0]} castShadow />
+            ))}
+          </group>
+          <mesh geometry={rbox(1.0, 0.24, 0.06, 0.03)} material={mat(PAL.green)} position={[0, 2.45, 0.05]} />
+          <mesh geometry={sphere} material={mat('#ffe066', '#ffe066', night ? 2.5 : 0.5)} position={[0, 2.45, 0.1]} scale={0.07} />
+        </group>
+      ))}
+
+      {/* menu boards beside each lane's ordering spot */}
       {WINDOW_X.slice(0, lanes).map((x, l) => (
-        <group key={l} position={[x - BOARD_OFFSET, 0, LANE_Z(l) - 0.95]}>
-          <mesh geometry={pole} material={mat('#3b4a43')} position={[0, 0.6, 0]} scale={[1, 0.5, 1]} />
-          <mesh geometry={box} position={[0, 1.4, 0]} scale={[1.1, 0.7, 0.1]} castShadow>
-            <meshStandardMaterial map={boardTex} emissive={night ? '#ffffff' : '#000'} emissiveMap={boardTex} emissiveIntensity={night ? 0.6 : 0} />
+        <group key={l} position={[x - BOARD_OFFSET, 0, laneMinZ - 0.35 - l * 0.0]}>
+          <mesh geometry={rbox(0.14, 1.0, 0.14, 0.03)} material={mat(PAL.green)} position={[0, 0.5, 0]} />
+          <mesh geometry={rbox(1.15, 0.8, 0.12, 0.04)} material={mat(PAL.green)} position={[0, 1.35, 0]} castShadow />
+          <mesh geometry={unitPlane} position={[0, 1.35, 0.065]} scale={[1.0, 0.65, 1]}>
+            <meshStandardMaterial map={boardTex} emissive="#ffffff" emissiveMap={boardTex} emissiveIntensity={night ? 0.7 : 0.05} />
+          </mesh>
+          <mesh geometry={rbox(0.32, 0.18, 0.1, 0.03)} material={mat(PAL.coral)} position={[0, 1.83, 0]} />
+          <mesh geometry={unitBox} position={[0, 1.83, 0.05]} scale={[0.2, 0.05, 0.02]} material={mat('#fff', '#fff', 0.2)} />
+        </group>
+      ))}
+
+      {/* pylon sign at the drive-thru entrance */}
+      <group position={[ENTRY_X - 1.0, 0, SOUTH_WALL_Z - 0.6]}>
+        <mesh geometry={rbox(0.9, 0.3, 0.9, 0.06)} material={mat(PAL.curb)} position={[0, 0.15, 0]} />
+        <mesh geometry={cylinder(0.12, 0.14, 4.4, 10)} material={mat(PAL.green)} position={[0, 2.4, 0]} castShadow />
+        <group position={[0, 4.6, 0]} rotation={[0, 0.4, 0]}>
+          <mesh geometry={rbox(2.8, 1.5, 0.3, 0.12)} material={mat(PAL.mustard)} castShadow />
+          <mesh geometry={unitPlane} position={[0, 0, 0.16]} scale={[2.5, 1.25, 1]}>
+            <meshStandardMaterial map={signTex} emissive="#ffffff" emissiveMap={signTex} emissiveIntensity={night ? 1.1 : 0.05} />
           </mesh>
         </group>
-      ))}
-      {/* tall sign */}
-      <group position={[b.minX - 2.2, 0, SOUTH_WALL_Z - 0.6]}>
-        <mesh geometry={pole} material={mat('#2f3e46')} position={[0, 2.4, 0]} scale={[2, 2, 2]} castShadow />
-        <mesh geometry={box} position={[0, 4.8, 0]} scale={[2.6, 1.3, 0.25]} rotation={[0, 0.35, 0]} castShadow>
-          <meshStandardMaterial map={signTex} emissive="#ffffff" emissiveMap={signTex} emissiveIntensity={night ? 1.1 : 0.05} />
-        </mesh>
-        {night && <pointLight position={[0, 4.5, 1]} color="#ffd166" intensity={10} distance={8} />}
+        {night && <pointLight position={[0, 4.4, 1.2]} color="#ffd166" intensity={10} distance={8} />}
       </group>
-      {/* neon strip (night market feel) */}
-      <mesh geometry={box} position={[cx, 2.15, b.minZ - 0.28]} scale={[W, 0.08, 0.06]}>
-        <meshStandardMaterial color="#ff4fd8" emissive="#ff4fd8" emissiveIntensity={night ? 2.5 : 0.2} />
-      </mesh>
+
+      {/* string lights over the kitchen */}
+      {[b.minX - 0.45, b.maxX + 0.45].map((x) => (
+        <mesh key={x} geometry={cylinder(0.05, 0.06, 2.8, 8)} material={mat(PAL.ink)} position={[x, 1.4, b.minZ - 0.45]} castShadow />
+      ))}
+      <StringLights a={[b.minX - 0.45, 2.75, b.minZ - 0.45]} b={[b.maxX + 0.45, 2.75, b.minZ - 0.45]} night={night} n={Math.round(W)} />
+      {[b.minX - 0.45, b.maxX + 0.45].map((x) => (
+        <mesh key={'p' + x} geometry={cylinder(0.05, 0.06, 2.6, 8)} material={mat(PAL.ink)} position={[x, 1.3, SOUTH_WALL_Z]} castShadow />
+      ))}
+      <StringLights a={[b.minX - 0.45, 2.55, SOUTH_WALL_Z]} b={[b.minX - 0.45, 2.75, b.minZ - 0.45]} night={night} n={6} />
+      <StringLights a={[b.maxX + 0.45, 2.55, SOUTH_WALL_Z]} b={[b.maxX + 0.45, 2.75, b.minZ - 0.45]} night={night} n={6} />
+
+      {/* planters & trees inside the block */}
+      <Planter x={b.minX - 0.45} z={b.minZ - 1.1} />
+      <Planter x={b.maxX + 0.45} z={b.minZ - 1.1} />
+      <Tree x={b.minX - 2.0} z={b.minZ - 1.8} s={1.1} tint={1} />
+      <Tree x={b.maxX + 2.0} z={b.minZ - 1.8} s={1.1} tint={2} />
+      <Tree x={b.maxX + 2.2} z={1.2} s={0.9} />
+      <Tree x={b.minX - 2.2} z={-0.6} s={0.9} tint={2} />
+
       {/* kitchen lights at night */}
       {night && <pointLight position={[cx - W / 4, 3.2, cz]} color="#ffe2b0" intensity={18} distance={11} decay={1.4} />}
       {night && <pointLight position={[cx + W / 4, 3.2, cz]} color="#ffe2b0" intensity={18} distance={11} decay={1.4} />}
-
-      {/* decorations */}
-      {[[-14, -2], [-15, 2], [14, -1.5], [15.5, 2.2], [-12, -9.5], [-6, -9.8], [3, -10], [11, -9.6], [-17, 12.5], [-9, 12.8], [0, 13], [9, 12.6], [17, 12]].map((p, i) => (
-        <Tree key={i} p={p as [number, number]} s={0.9 + (i % 3) * 0.15} />
-      ))}
-      {[[-10, roadMinZ - 0.4], [-2, roadMinZ - 0.4], [8.5, roadMinZ - 0.4], [-12, roadMaxZ + 0.6], [0, roadMaxZ + 0.6], [12, roadMaxZ + 0.6]].map((p, i) => (
-        <Lamp key={i} p={p as [number, number]} night={night} />
-      ))}
-      {[[-18, -13, 4, 3, 4.5, '#e8a87c'], [-12, -13.5, 4, 3, 3.2, '#9fc5c8'], [-5, -13.2, 5, 3, 5.4, '#f2c57c'], [3, -13.5, 4, 3, 3.8, '#c98b8b'], [10, -13, 5, 3, 4.8, '#a7c4a0'], [17, -13.5, 4, 3, 3.4, '#e7b9a0'],
-        [-16, 16.5, 5, 3, 3.6, '#c2b0d9'], [-6, 16.8, 6, 3, 4.6, '#f0b67f'], [6, 16.5, 5, 3, 3.2, '#9fc5c8'], [15, 16.8, 5, 3, 5.0, '#e8a87c']].map((d, i) => (
-        <CityBlock key={i} p={[d[0] as number, d[1] as number]} w={d[2] as number} d={d[3] as number} h={d[4] as number} c={d[5] as string} night={night} />
-      ))}
-      {[[-16, LANE_Z(0) - 0.95], [-15, LANE_Z(0) - 0.95], [14.5, roadMaxZ + 0.4]].map((p, i) => (
-        <mesh key={i} geometry={tcone} material={mat('#f28c28')} position={[p[0], 0.21, p[1]]} castShadow />
-      ))}
-      <mesh geometry={cone} material={mat('#5b9a49')} position={[-19, 0.7, -4]} castShadow />
+      <mesh geometry={unitBox} visible={false} />
       <Rain engine={engine} />
     </group>
   );

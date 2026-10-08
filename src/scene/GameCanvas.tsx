@@ -8,6 +8,7 @@ import { World } from './World';
 import { Stations } from './Stations';
 import { Player } from './Player';
 import { Vehicles } from './Vehicles';
+import { Traffic } from './Traffic';
 import { input } from '../ui/input';
 import { playFx } from '../utils/audio';
 
@@ -16,11 +17,11 @@ function CameraRig({ engine }: { engine: GameEngine }) {
   const zoom = useGame((s) => s.zoom);
   useEffect(() => {
     const cam = camera as THREE.OrthographicCamera;
-    const worldW = engine.level.layout === 'wide' ? 30 : 23;
-    const worldH = 16;
+    const worldW = 34;
+    const worldH = 25;
     cam.zoom = Math.min(size.width / worldW, size.height / worldH) * zoom;
     cam.position.set(8, 20, 22);
-    cam.lookAt(0, 0, 2.2);
+    cam.lookAt(0, 0, 2.6);
     cam.updateProjectionMatrix();
   }, [camera, size, zoom, engine]);
   return null;
@@ -38,9 +39,9 @@ function Lights() {
     <>
       <hemisphereLight args={[night ? '#5a6aa8' : '#fff6e0', night ? '#1a2030' : '#c9b48f', night ? 0.7 : 1.1]} />
       <directionalLight
-        position={night ? [-10, 18, 6] : [10, 20, 8]} intensity={night ? 0.35 : 1.7} color={night ? '#9fb4ff' : '#fff1d6'}
-        castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-22} shadow-camera-right={22}
-        shadow-camera-top={18} shadow-camera-bottom={-18} shadow-bias={-0.0005}
+        position={night ? [-14, 26, 10] : [-14, 28, 16]} intensity={night ? 0.35 : 1.9} color={night ? '#9fb4ff' : '#fff1d6'}
+        castShadow shadow-camera-left={-30} shadow-camera-right={30}
+        shadow-camera-top={26} shadow-camera-bottom={-26} shadow-mapSize-width={2048} shadow-mapSize-height={2048} shadow-bias={-0.0004} shadow-normalBias={0.03}
       />
     </>
   );
@@ -83,7 +84,7 @@ export function GameCanvas({ engine }: { engine: GameEngine }) {
   const setZoom = useGame((s) => s.setZoom);
   return (
     <Canvas
-      orthographic shadows dpr={[1, 2]}
+      orthographic shadows="soft" dpr={[1, 2]}
       camera={{ position: [12, 20, 21], near: 0.1, far: 200, zoom: 40 }}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
       onWheel={(e) => setZoom(useGame.getState().zoom * (e.deltaY > 0 ? 0.94 : 1.06))}
@@ -91,8 +92,11 @@ export function GameCanvas({ engine }: { engine: GameEngine }) {
       <CameraRig engine={engine} />
       <Lights />
       <World engine={engine} />
-      <Stations engine={engine} />
-      <Player engine={engine} />
+      <group position={[0, 0.14, 0]}>
+        <Stations engine={engine} />
+        <Player engine={engine} />
+      </group>
+      <Traffic />
       <Vehicles engine={engine} />
       <FloatingFx engine={engine} />
       <Loop engine={engine} />

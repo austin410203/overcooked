@@ -4,12 +4,13 @@ import * as THREE from 'three';
 import type { Station } from '../game/types';
 import type { GameEngine } from '../game/systems/engine';
 import { ItemMesh, mat } from './ItemMesh';
+import { rbox, cylinder, unitBox, PAL } from './kit';
 import { useGame } from '../store/useGame';
 
 const TOP = 0.9;
 const TMPQ = new THREE.Quaternion();
-const boxG = new THREE.BoxGeometry(1, TOP, 1);
-const topG = new THREE.BoxGeometry(1.04, 0.08, 1.04);
+const boxG = rbox(0.98, TOP, 0.98, 0.08, 2);
+const topG = rbox(1.04, 0.08, 1.04, 0.035, 2);
 const plateG = new THREE.BoxGeometry(0.8, 0.04, 0.8);
 const barBg = new THREE.PlaneGeometry(0.9, 0.12);
 const barFg = new THREE.PlaneGeometry(1, 0.1);
@@ -17,7 +18,8 @@ const ringG = new THREE.RingGeometry(0.62, 0.72, 32);
 const smokeG = new THREE.SphereGeometry(0.12, 6, 5);
 const cylG = new THREE.CylinderGeometry(0.4, 0.45, TOP, 10);
 const lightG = new THREE.SphereGeometry(0.07, 8, 6);
-const crateG = new THREE.BoxGeometry(0.85, 0.25, 0.85);
+const crateG = rbox(0.85, 0.25, 0.85, 0.05, 2);
+const barG = rbox(0.74, 0.025, 0.035, 0.01, 1);
 
 const BODY: Record<Station['kind'], string> = {
   storage: '#b9855a', grill: '#555d66', fryer: '#6b7680', drink: '#d94f3d', assembly: '#e9dcc3',
@@ -109,6 +111,8 @@ function StationBody({ s, night }: { s: Station; night: boolean }) {
         <group>
           <mesh geometry={boxG} material={body} position={[0, TOP / 2, 0]} castShadow receiveShadow />
           <mesh geometry={crateG} material={mat('#d9a36b')} position={[0, TOP + 0.12, 0]} />
+          {[-0.3, 0, 0.3].map((z) => <mesh key={z} geometry={unitBox} material={mat('#b9855a')} position={[0, TOP + 0.13, z]} scale={[0.87, 0.2, 0.04]} />)}
+          <mesh geometry={rbox(0.5, 0.18, 0.04, 0.02)} material={mat(PAL.white)} position={[0, TOP * 0.55, 0.5]} />
         </group>
       );
     default: {
@@ -121,10 +125,35 @@ function StationBody({ s, night }: { s: Station; night: boolean }) {
           {(s.kind === 'grill' || s.kind === 'fryer') && (
             <mesh geometry={plateG} material={mat(s.kind === 'grill' ? '#1a1a1a' : '#e8c35a', glow, glow ? 0.8 : 0)} position={[0, TOP + 0.05, 0]} />
           )}
+          {s.kind === 'grill' && [-0.24, -0.08, 0.08, 0.24].map((z) => (
+            <mesh key={z} geometry={barG} material={mat('#6b7076')} position={[0, TOP + 0.085, z]} />
+          ))}
+          {s.kind === 'grill' && [-0.3, -0.1, 0.1, 0.3].map((x) => (
+            <mesh key={x} geometry={cylinder(0.04, 0.04, 0.05, 10)} material={mat(PAL.tomato)} position={[x, TOP * 0.55, 0.5]} rotation={[Math.PI / 2, 0, 0]} />
+          ))}
+          {s.kind === 'fryer' && (
+            <>
+              <mesh geometry={rbox(0.6, 0.14, 0.6, 0.04)} material={mat('#c9cdd0')} position={[0, TOP + 0.1, 0]} />
+              <mesh geometry={rbox(0.08, 0.04, 0.42, 0.015)} material={mat(PAL.ink)} position={[0, TOP + 0.24, -0.34]} />
+              <mesh geometry={unitBox} material={mat('#f6d365', '#f6a623', s.state === 'processing' ? 0.6 : 0)} position={[0, TOP + 0.06, 0]} scale={[0.55, 0.04, 0.55]} />
+            </>
+          )}
+          {s.kind === 'pickup' && (
+            <mesh geometry={rbox(0.9, 0.05, 0.6, 0.02)} material={mat(PAL.white)} position={[0, TOP + 0.06, 0]} />
+          )}
+          {s.kind === 'assembly' && (
+            <mesh geometry={rbox(0.7, 0.04, 0.55, 0.02)} material={mat('#c9945e')} position={[0, TOP + 0.05, 0]} />
+          )}
           {s.kind === 'drink' && (
             <group>
               <mesh geometry={boxG} material={mat('#c73e2f')} position={[0, TOP + 0.45, -0.3]} scale={[0.9, 1, 0.35]} castShadow />
               <mesh geometry={lightG} material={mat('#9be7ff', '#9be7ff', night ? 2 : 0.6)} position={[0, TOP + 0.75, -0.12]} />
+              {[-0.22, 0, 0.22].map((x, i) => (
+                <group key={x}>
+                  <mesh geometry={cylinder(0.03, 0.03, 0.12, 8)} material={mat(PAL.metal)} position={[x, TOP + 0.38, -0.12]} />
+                  <mesh geometry={rbox(0.16, 0.1, 0.03, 0.02)} material={mat(['#e5443a', '#f2c14e', '#7bb662'][i])} position={[x, TOP + 0.6, -0.12]} />
+                </group>
+              ))}
             </group>
           )}
           {s.kind === 'pickup' && (
