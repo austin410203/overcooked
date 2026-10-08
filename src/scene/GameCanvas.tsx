@@ -15,15 +15,18 @@ import { playFx } from '../utils/audio';
 function CameraRig({ engine }: { engine: GameEngine }) {
   const { camera, size } = useThree();
   const zoom = useGame((s) => s.zoom);
+  const compact = useGame((s) => s.compact);
   useEffect(() => {
     const cam = camera as THREE.OrthographicCamera;
-    const worldW = 34;
-    const worldH = 25;
+    const wide = engine.level.layout === 'wide';
+    // phones: frame the kitchen + drive-thru lanes instead of the whole block
+    const worldW = compact ? (wide ? 23 : 17) : 34;
+    const worldH = compact ? (size.height > size.width ? 15 : 13.5) : 25;
     cam.zoom = Math.min(size.width / worldW, size.height / worldH) * zoom;
     cam.position.set(8, 20, 22);
-    cam.lookAt(0, 0, 2.6);
+    cam.lookAt(0, 0, !compact ? 2.6 : size.height > size.width ? 0.6 : -0.4);
     cam.updateProjectionMatrix();
-  }, [camera, size, zoom, engine]);
+  }, [camera, size, zoom, engine, compact]);
   return null;
 }
 

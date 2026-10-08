@@ -12,6 +12,15 @@ import { unlockAudio } from '../utils/audio';
 const SHORTCUTS: StationKind[] = ['grill', 'fryer', 'drink', 'pickup'];
 const VEHICLE_ICON: Record<string, string> = { yellow: '🚕', red: '🚗', blue: '🚙', green: '🚗', van: '🚐', truck: '🛻', vip: '🖤', festival: '🎉' };
 
+/** Small screens or touch devices get the compact HUD. */
+function useCompact(touch: boolean) {
+  const calc = () => touch || window.innerWidth < 820 || window.innerHeight < 560;
+  const [c, setC] = useState(calc);
+  useEffect(() => { const f = () => setC(calc()); window.addEventListener('resize', f); return () => window.removeEventListener('resize', f); });
+  useEffect(() => { useGame.getState().setCompact(c); }, [c]);
+  return c;
+}
+
 function fmt(sec: number) { const s = Math.ceil(sec); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
 
 function TopHud({ engine }: { engine: GameEngine }) {
@@ -98,8 +107,9 @@ function Banners({ engine }: { engine: GameEngine }) {
 function Tutorial({ engine }: { engine: GameEngine }) {
   const t = useT();
   useGame((s) => s.tick);
+  const compact = useGame((s) => s.compact);
   if (engine.level.index !== 0 || engine.time > 40) return null;
-  const step = engine.time < 10 ? 'tutorial1' : engine.time < 22 ? 'tutorial2' : engine.time < 32 ? 'tutorial3' : 'tutorial4';
+  const step = engine.time < 10 ? (compact ? 'tutorial1Touch' : 'tutorial1') : engine.time < 22 ? 'tutorial2' : engine.time < 32 ? 'tutorial3' : 'tutorial4';
   return <div className="tutorial">💡 {t(step)}</div>;
 }
 
@@ -122,16 +132,22 @@ function BottomBar({ engine }: { engine: GameEngine }) {
 
 function PauseMenu() {
   const t = useT();
-  const { setPaused, restart, quit } = useGame();
+  const { setPaused, restart, quit, speed, cycleSpeed, compact, engine } = useGame();
   return (
     <div className="overlay">
       <div className="modal">
         <h2>{t('paused')}</h2>
+        {compact && engine && (
+          <div className="pause-goal">{t('objServe', { n: engine.level.goal.orders })} · {t('obj3')}: {goalText(t, engine.level.goal)}</div>
+        )}
         <button className="btn primary big" onClick={() => setPaused(false)}>{t('resume')}</button>
-        <button className="btn" onClick={restart}>{t('restart')}</button>
+        <div className="modal-row">
+          <button className="btn" onClick={restart}>{t('restart')}</button>
+          <button className="btn" onClick={cycleSpeed}>⏩ {t('speed')} x{speed}</button>
+        </div>
         <button className="btn" onClick={quit}>{t('quit')}</button>
         <div className="modal-settings"><Toggles /></div>
-        <p className="keys">{t('keys')}</p>
+        {!compact && <p className="keys">{t('keys')}</p>}
       </div>
     </div>
   );
@@ -164,6 +180,8 @@ function DebugPanel({ engine }: { engine: GameEngine }) {
 
 function TouchControls({ engine }: { engine: GameEngine }) {
   const t = useT();
+  useGame((st) => st.tick);
+  const held = engine.player.carrying;
   const base = useRef<HTMLDivElement>(null);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
   const active = useRef<number | null>(null);
@@ -182,9 +200,59 @@ function TouchControls({ engine }: { engine: GameEngine }) {
         onPointerDown={(e) => { active.current = e.pointerId; (e.target as HTMLElement).setPointerCapture(e.pointerId); move(e.clientX, e.clientY); }}
         onPointerMove={(e) => { if (active.current === e.pointerId) move(e.clientX, e.clientY); }}
         onPointerUp={end} onPointerCancel={end}>
-        <div className="joy-knob" style={{ transform: `translate(${knob.x * 34}px, ${knob.y * 34}px)` }} />
+        <div className="joy-knob" style={{ transform: `translate(${knob.x * 30}px, ${knob.y * 30}px)` }} />
       </div>
-      <button className="act" onPointerDown={(e) => { e.preventDefault(); unlockAudio(); engine.interact(); }}>{t('interact')}</button>
+      <button className="act" onPointerDown={(e) => { e.preventDefault(); unlockAudio(); engine.interact(); }}>
+        <span className="act-item">{held ? ITEM_ICON[held] : '✋'}</span>
+        <span className="act-label">{t('interact')}</span>
+      </button>
+    </div>
+  );
+}
+
+
+/* ---------------------------------------------------------------- mobile HUD */
+function MobileTop({ engine }: { engine: GameEngine }) {
+  const t = useT();
+  useGame((s) => s.tick);
+  const { setPaused } = useGame();
+  const g = engine.level.goal;
+  const low = engine.timeLeft < 30;
+  return (
+    <div className="m-top">
+      <div className="m-stats">
+        <span className={low ? 'danger' : ''}>⏱ {fmt(engine.timeLeft)}</span>
+        <span>💰 {engine.cash}</span>
+        <span>✅ {engine.served}/{g.orders}</span>
+        {engine.combo >= 2 && <span className="hot">🔥x{engine.combo}</span>}
+        <i className="m-rep" title={t('rep')}><b style={{ width: `${engine.reputation}%` }} /></i>
+      </div>
+      <button className="m-pause" onClick={() => setPaused(true)} aria-label={t('pause')}>⏸</button>
+    </div>
+  );
+}
+
+function MobileOrders({ engine }: { engine: GameEngine }) {
+  useGame((s) => s.tick);
+  const t = useT();
+  const orders = [...engine.activeOrders].sort((a, b) => a.deadline - b.deadline).slice(0, 5);
+  if (!orders.length) return null;
+  return (
+    <div className="m-orders">
+      {orders.map((o) => {
+        const pct = Math.max(0, (o.deadline - engine.time) / o.patience);
+        const pool = [...o.delivered];
+        const atWindow = engine.carAtWindow(o.lane)?.id === o.vehicleId;
+        return (
+          <div key={o.id} className={`m-order ${o.priority} ${pct < 0.25 ? 'urgent' : ''} ${atWindow ? 'at-window' : ''}`}>
+            <div className="m-order-items">
+              {o.items.map((it, i) => { const k = pool.indexOf(it); if (k >= 0) pool.splice(k, 1); return <span key={i} className={k >= 0 ? 'done' : ''}>{ITEM_ICON[it]}</span>; })}
+            </div>
+            <div className="m-order-meta">{engine.level.lanes > 1 ? `${t('lane', { n: o.lane + 1 })} · ` : ''}{Math.ceil(o.deadline - engine.time)}{t('sec')}</div>
+            <div className="order-bar"><i style={{ width: `${pct * 100}%` }} /></div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -195,6 +263,7 @@ export function GameScreen() {
   const debug = useGame((s) => s.debug);
   const theme = useGame((s) => s.theme);
   const [touch] = useState(() => typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
+  const compact = useCompact(touch);
 
   useEffect(() => bindKeyboard(), []);
   useEffect(() => {
@@ -230,14 +299,23 @@ export function GameScreen() {
 
   if (!engine) return null;
   return (
-    <div className={`game-screen ${theme}`}>
+    <div className={`game-screen ${theme} ${compact ? 'compact' : ''}`}>
       <GameCanvas key={engine.uid} engine={engine} />
-      <TopHud engine={engine} />
-      <Objective engine={engine} />
-      <OrderQueue engine={engine} />
+      {compact ? (
+        <>
+          <MobileTop engine={engine} />
+          <MobileOrders engine={engine} />
+        </>
+      ) : (
+        <>
+          <TopHud engine={engine} />
+          <Objective engine={engine} />
+          <OrderQueue engine={engine} />
+          <BottomBar engine={engine} />
+        </>
+      )}
       <Banners engine={engine} />
       <Tutorial engine={engine} />
-      <BottomBar engine={engine} />
       {touch && <TouchControls engine={engine} />}
       {debug && <DebugPanel engine={engine} />}
       {paused && <PauseMenu />}

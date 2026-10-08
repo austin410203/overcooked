@@ -198,3 +198,73 @@ kbd { display: inline-block; min-width: 1.3em; padding: 0 4px; border-radius: 5p
 }
 
 .loading { background: var(--card); padding: 12px 20px; border-radius: 14px; font-weight: 800; box-shadow: var(--shadow); white-space: nowrap; }
+
+/* ================= compact (phone) HUD ================= */
+.game-screen.compact .banners { top: calc(env(safe-area-inset-top, 0px) + 92px); }
+.game-screen.compact .banner { font-size: .8rem; padding: 5px 12px; white-space: normal; max-width: 86vw; text-align: center; }
+.game-screen.compact .tutorial {
+  top: calc(env(safe-area-inset-top, 0px) + 96px); bottom: auto; font-size: .78rem; padding: 6px 12px;
+  max-width: min(78vw, 420px); opacity: .92; border-radius: 12px;
+}
+.game-screen.compact .bubble { padding: 2px 5px 4px; min-width: 34px; border-width: 1.5px; border-radius: 10px; }
+.game-screen.compact .bubble-items { font-size: .9rem; }
+.game-screen.compact .float-text { font-size: 1rem; }
+.game-screen.compact .mood { font-size: 1.1rem; }
+
+.m-top {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 20;
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) max(10px, env(safe-area-inset-right, 0px)) 0 max(10px, env(safe-area-inset-left, 0px));
+  display: flex; gap: 8px; align-items: center; pointer-events: none;
+}
+.m-stats {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; overflow: hidden;
+  background: var(--card); border: 1px solid var(--card-border); border-radius: 999px; box-shadow: var(--shadow);
+  padding: 5px 12px; font-weight: 800; font-size: .82rem; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.m-stats .danger { color: var(--tomato); }
+.m-stats .hot { color: var(--coral); }
+.m-rep { flex: 1; min-width: 30px; max-width: 80px; height: 6px; border-radius: 4px; background: var(--cream2); overflow: hidden; margin-left: auto; }
+.m-rep b { display: block; height: 100%; background: linear-gradient(90deg, var(--orange), var(--ok)); }
+.m-pause {
+  pointer-events: auto; width: 36px; height: 36px; flex: none; border-radius: 50%; border: 1px solid var(--card-border);
+  background: var(--card); box-shadow: var(--shadow); font-size: .95rem;
+}
+
+.m-orders {
+  position: absolute; z-index: 15; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + 48px);
+  display: flex; gap: 6px; overflow-x: auto; padding: 0 10px 4px; pointer-events: auto; scrollbar-width: none;
+}
+.m-orders::-webkit-scrollbar { display: none; }
+.m-order {
+  flex: none; min-width: 64px; background: var(--card); border: 1px solid var(--card-border); border-radius: 10px;
+  border-top: 3px solid var(--green2); box-shadow: var(--shadow); padding: 3px 6px 4px;
+}
+.m-order.vip { border-top-color: #d4af37; }
+.m-order.rush { border-top-color: var(--orange); }
+.m-order.urgent { border-top-color: var(--tomato); animation: shake .35s infinite; }
+.m-order.at-window { outline: 2px solid var(--ok); }
+.m-order-items { font-size: 1.05rem; line-height: 1.2; white-space: nowrap; }
+.m-order-items .done { opacity: .25; filter: grayscale(1); }
+.m-order-meta { font-size: .62rem; font-weight: 800; color: var(--muted); white-space: nowrap; }
+.m-order .order-bar { height: 3px; margin-top: 2px; }
+
+.game-screen.compact .touch {
+  inset: auto 0 0 0;
+  padding: 0 max(14px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 14px) max(14px, env(safe-area-inset-left, 0px));
+}
+.game-screen.compact .joy { width: 96px; height: 96px; background: rgba(31,77,58,.16); border-color: rgba(255,255,255,.5); }
+.game-screen.compact .joy-knob { width: 40px; height: 40px; opacity: .85; }
+.game-screen.compact .act {
+  width: 76px; height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  opacity: .92; font-size: .72rem;
+}
+.act-item { font-size: 1.5rem; line-height: 1; }
+.act-label { font-size: .7rem; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .game-screen.compact .m-orders { top: calc(env(safe-area-inset-top, 0px) + 46px); left: auto; right: max(10px, env(safe-area-inset-right, 0px)); bottom: 110px; flex-direction: column; overflow-y: auto; overflow-x: hidden; width: 92px; padding: 0; }
+  .game-screen.compact .tutorial { top: calc(env(safe-area-inset-top, 0px) + 50px); }
+  .game-screen.compact .banners { top: calc(env(safe-area-inset-top, 0px) + 48px); }
+}
+.pause-goal { font-size: .8rem; color: var(--muted); font-weight: 700; max-width: 300px; }
+.modal-row { display: flex; gap: 8px; }
+.modal-row .btn { flex: 1; }

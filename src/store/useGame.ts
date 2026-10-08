@@ -39,6 +39,8 @@ interface GameState extends SaveData {
   tick: number;
   debug: boolean;
   zoom: number;
+  compact: boolean;
+  setCompact: (c: boolean) => void;
   lastResult: (LevelResult & { newUnlock?: string; levelIndex: number }) | null;
   setScreen: (s: Screen) => void;
   setLang: (l: Lang) => void;
@@ -70,6 +72,8 @@ export const useGame = create<GameState>((set, get) => ({
   tick: 0,
   debug: false,
   zoom: 1.15,
+  compact: false,
+  setCompact: (compact) => set({ compact }),
   lastResult: null,
   setScreen: (screen) => set({ screen }),
   setLang: (lang) => { set({ lang }); save(persisted(get())); },

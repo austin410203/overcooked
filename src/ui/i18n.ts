@@ -72,6 +72,7 @@ const dict = {
   'event.breakdown.fixed': { zh: '✅ 設備修好了', en: '✅ Machine repaired' },
   comboBanner: { zh: '🔥 連擊！', en: '🔥 Combo!' },
   tutorial1: { zh: '用 WASD／方向鍵移動，靠近站台按 E 或空白鍵互動', en: 'Move with WASD/arrows, press E or Space at a station' },
+  tutorial1Touch: { zh: '左下搖桿移動，靠近站台按右下「互動」', en: 'Drag the stick to move, tap Use at a station' },
   tutorial2: { zh: '漢堡：生肉放烤台 → 熟肉＋麵包放組裝台 → 送到取餐窗', en: 'Burger: patty on grill → cooked patty + bun on assembly → pickup window' },
   tutorial3: { zh: '薯條：馬鈴薯放炸鍋；飲料：空手按飲料機', en: 'Fries: potato into fryer. Soda: use the drink machine empty-handed' },
   tutorial4: { zh: '烤太久會燒焦！燒焦的丟垃圾桶', en: 'Leave food too long and it burns — bin it!' },
