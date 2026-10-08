@@ -1,0 +1,129 @@
+import { useGame } from '../store/useGame';
+
+export type Lang = 'zh' | 'en';
+
+const dict = {
+  title: { zh: '得來速餐廳大作戰', en: 'Drive-Thru Dash' },
+  subtitle: { zh: '接單、煎肉、裝袋、出餐——別讓車陣塞爆！', en: 'Take orders, grill, bag & serve — keep the line moving!' },
+  start: { zh: '開始遊戲', en: 'Play' },
+  continue: { zh: '繼續', en: 'Continue' },
+  levels: { zh: '關卡', en: 'Levels' },
+  settings: { zh: '設定', en: 'Settings' },
+  howto: { zh: '玩法說明', en: 'How to play' },
+  back: { zh: '返回', en: 'Back' },
+  locked: { zh: '未解鎖', en: 'Locked' },
+  lockedNeed: { zh: '需前一關 1 星', en: 'Need 1★ on previous' },
+  language: { zh: '語言', en: 'Language' },
+  dayNight: { zh: '白天 / 晚上', en: 'Day / Night' },
+  day: { zh: '白天', en: 'Day' },
+  night: { zh: '晚上', en: 'Night' },
+  sound: { zh: '音效', en: 'Sound' },
+  on: { zh: '開', en: 'On' },
+  off: { zh: '關', en: 'Off' },
+  resetProgress: { zh: '重置進度', en: 'Reset progress' },
+  day_n: { zh: '第 {n} 天', en: 'Day {n}' },
+  time: { zh: '時間', en: 'Time' },
+  cash: { zh: '收入', en: 'Cash' },
+  rep: { zh: '評價', en: 'Rep' },
+  combo: { zh: '連擊', en: 'Combo' },
+  objective: { zh: '目前目標', en: 'Objective' },
+  objServe: { zh: '完成 {n} 張訂單', en: 'Serve {n} orders' },
+  obj3: { zh: '3 星條件', en: '3★ conditions' },
+  mistakesMax: { zh: '錯餐 ≤ {n}', en: 'Mistakes ≤ {n}' },
+  avgWaitMax: { zh: '平均等待 < {n} 秒', en: 'Avg wait < {n}s' },
+  comboMin: { zh: '最高連擊 ≥ {n}', en: 'Max combo ≥ {n}' },
+  vipPerfect: { zh: 'VIP 全部準時', en: 'Every VIP served' },
+  orders: { zh: '訂單', en: 'Orders' },
+  noOrders: { zh: '等待車輛點餐…', en: 'Waiting for cars…' },
+  lane: { zh: '車道 {n}', en: 'Lane {n}' },
+  pause: { zh: '暫停', en: 'Pause' },
+  paused: { zh: '已暫停', en: 'Paused' },
+  resume: { zh: '繼續遊戲', en: 'Resume' },
+  restart: { zh: '重新開始', en: 'Restart' },
+  quit: { zh: '離開關卡', en: 'Quit level' },
+  speed: { zh: '速度', en: 'Speed' },
+  interact: { zh: '互動', en: 'Use' },
+  holding: { zh: '手上', en: 'Holding' },
+  empty: { zh: '空手', en: 'Empty' },
+  result: { zh: '營業結算', en: 'Shift Report' },
+  served: { zh: '完成訂單', en: 'Orders served' },
+  failedOrders: { zh: '流失顧客', en: 'Customers lost' },
+  mistakes: { zh: '錯餐', en: 'Wrong items' },
+  avgWait: { zh: '平均等待', en: 'Average wait' },
+  maxCombo: { zh: '最高連擊', en: 'Max combo' },
+  revenue: { zh: '收益', en: 'Revenue' },
+  vip: { zh: 'VIP', en: 'VIP' },
+  rush: { zh: '急件', en: 'Rush' },
+  unlockedItem: { zh: '解鎖：{x}', en: 'Unlocked: {x}' },
+  next: { zh: '下一關', en: 'Next level' },
+  retry: { zh: '再玩一次', en: 'Retry' },
+  menu: { zh: '主選單', en: 'Main menu' },
+  sec: { zh: '秒', en: 's' },
+  debug: { zh: '除錯面板', en: 'Debug panel' },
+  'event.rain.warn': { zh: '☔ 5 秒後雨勢增強！移動變慢', en: '☔ Heavy rain in 5s — you will move slower' },
+  'event.rain.start': { zh: '☔ 大雨來了！', en: '☔ Downpour!' },
+  'event.jam.warn': { zh: '🚧 5 秒後道路塞車', en: '🚧 Traffic jam in 5s' },
+  'event.jam.start': { zh: '🚧 塞車中——之後車潮會湧入', en: '🚧 Jammed — expect a burst after' },
+  'event.jam.end': { zh: '🚗 道路恢復暢通，車潮來了！', en: '🚗 Road clear — here they come!' },
+  'event.rush.warn': { zh: '🏮 5 秒後夜市人潮湧入', en: '🏮 Night-market rush in 5s' },
+  'event.rush.start': { zh: '🏮 尖峰時段！', en: '🏮 Rush hour!' },
+  'event.breakdown.warn': { zh: '🔧 有設備快故障了（閃紅燈）', en: '🔧 A machine is about to break (red flash)' },
+  'event.breakdown.start': { zh: '🔧 設備故障！暫時無法使用', en: '🔧 Machine down!' },
+  'event.breakdown.fixed': { zh: '✅ 設備修好了', en: '✅ Machine repaired' },
+  comboBanner: { zh: '🔥 連擊！', en: '🔥 Combo!' },
+  tutorial1: { zh: '用 WASD／方向鍵移動，靠近站台按 E 或空白鍵互動', en: 'Move with WASD/arrows, press E or Space at a station' },
+  tutorial2: { zh: '漢堡：生肉放烤台 → 熟肉＋麵包放組裝台 → 送到取餐窗', en: 'Burger: patty on grill → cooked patty + bun on assembly → pickup window' },
+  tutorial3: { zh: '薯條：馬鈴薯放炸鍋；飲料：空手按飲料機', en: 'Fries: potato into fryer. Soda: use the drink machine empty-handed' },
+  tutorial4: { zh: '烤太久會燒焦！燒焦的丟垃圾桶', en: 'Leave food too long and it burns — bin it!' },
+  howtoBody: {
+    zh: '車輛會開到點餐看板點餐，然後排到取餐窗。依訂單備好餐點、放進對應車道的取餐窗即可出餐。連續正確出餐可累積連擊倍率；錯餐、燒焦、讓顧客等太久都會扣分。按 1–4 可標示最近的烤台／炸鍋／飲料機／取餐窗。',
+    en: 'Cars stop at the menu board to order, then queue at the pickup window. Prepare each order and drop the items into that lane\'s pickup window. Serve correctly in a row to build combo multipliers; wrong items, burnt food and slow service cost you. Press 1–4 to highlight the nearest grill / fryer / drink / pickup.',
+  },
+  keys: { zh: 'WASD 移動 · E/空白鍵 互動 · 1–4 標示站台 · Esc 暫停 · 滾輪 縮放 · ` 除錯', en: 'WASD move · E/Space use · 1–4 highlight · Esc pause · Wheel zoom · ` debug' },
+  // level names
+  L01: { zh: '新手上路', en: 'First Shift' },
+  L02: { zh: '雙線壓力', en: 'Double Lane' },
+  L03: { zh: '雨天尖峰', en: 'Rainy Rush' },
+  L04: { zh: '夜市狂歡', en: 'Night Market' },
+  L05: { zh: '交通大混亂', en: 'Gridlock' },
+  L06: { zh: 'VIP 快車道', en: 'VIP Express' },
+  L07: { zh: '連鎖餐廳', en: 'Flagship Store' },
+  L08: { zh: '終極尖峰', en: 'Ultimate Rush' },
+  L01d: { zh: '單車道，學會完整流程', en: 'One lane. Learn the loop.' },
+  L02d: { zh: '兩條車道＋雞塊，開始分工', en: 'Two lanes + nuggets.' },
+  L03d: { zh: '下雨路滑，移動變慢', en: 'Rain slows you down.' },
+  L04d: { zh: '夜間霓虹、套餐與人潮', en: 'Neon nights, combos & crowds.' },
+  L05d: { zh: '三車道與塞車事件', en: 'Three lanes and traffic jams.' },
+  L06d: { zh: 'VIP 黑車不能等！', en: 'VIPs will not wait!' },
+  L07d: { zh: '超大廚房，規劃動線', en: 'Huge kitchen — plan routes.' },
+  L08d: { zh: '雨＋塞車＋故障，最終挑戰', en: 'Rain + jams + breakdowns.' },
+  // items
+  bun: { zh: '麵包', en: 'Bun' }, patty_raw: { zh: '生肉排', en: 'Raw patty' }, patty_cooked: { zh: '熟肉排', en: 'Cooked patty' },
+  patty_burnt: { zh: '焦肉排', en: 'Burnt patty' }, potato: { zh: '馬鈴薯', en: 'Potato' }, fries: { zh: '薯條', en: 'Fries' },
+  fries_burnt: { zh: '焦薯條', en: 'Burnt fries' }, chicken: { zh: '生雞肉', en: 'Raw chicken' }, nuggets: { zh: '雞塊', en: 'Nuggets' },
+  nuggets_burnt: { zh: '焦雞塊', en: 'Burnt nuggets' }, soda: { zh: '可樂', en: 'Soda' }, burger: { zh: '漢堡', en: 'Burger' },
+  // stations
+  st_storage: { zh: '食材櫃', en: 'Storage' }, st_grill: { zh: '烤台', en: 'Grill' }, st_fryer: { zh: '炸鍋', en: 'Fryer' },
+  st_drink: { zh: '飲料機', en: 'Drinks' }, st_assembly: { zh: '組裝台', en: 'Assembly' }, st_counter: { zh: '工作台', en: 'Counter' },
+  st_pickup: { zh: '取餐窗', en: 'Pickup' }, st_trash: { zh: '垃圾桶', en: 'Trash' },
+  // upgrades
+  fast_grill: { zh: '快速烤台（+25%）', en: 'Fast Grill (+25%)' },
+  big_fryer: { zh: '強力炸鍋（+25%）', en: 'Turbo Fryer (+25%)' },
+  quick_shoes: { zh: '防滑快跑鞋（+10% 移速）', en: 'Grip Sneakers (+10% speed)' },
+  fast_drink: { zh: '雙噴頭飲料機（+40%）', en: 'Dual-Nozzle Drinks (+40%)' },
+  patient_fans: { zh: '忠實粉絲（顧客耐心 +10%）', en: 'Loyal Fans (+10% patience)' },
+} as const;
+
+export type I18nKey = keyof typeof dict;
+
+export function translate(lang: Lang, key: string, vars?: Record<string, string | number>): string {
+  const entry = (dict as Record<string, { zh: string; en: string }>)[key];
+  let s = entry ? entry[lang] : key;
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.replace(`{${k}}`, String(v));
+  return s;
+}
+
+export function useT() {
+  const lang = useGame((s) => s.lang);
+  return (key: string, vars?: Record<string, string | number>) => translate(lang, key, vars);
+}
